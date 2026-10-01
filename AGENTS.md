@@ -159,3 +159,10 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - After the feature tests pass, ask the user to run the complete suite with `php artisan test --compact`.
 
 </laravel-boost-guidelines>
+
+## Cursor Cloud specific instructions
+
+- PHP 8.5 and Composer come from the php.new Herd Lite binaries in `~/.config/herd-lite/bin`. Wrappers at `/usr/local/bin/php` and `/usr/local/bin/composer` put them on the default PATH. Do not install a second PHP from apt.
+- The app uses SQLite at `database/database.sqlite`. If `.env` is missing, copy `.env.example`, generate `APP_KEY` only when it is empty, then run `php artisan migrate --force --no-interaction`.
+- Dependencies and frontend assets: `composer install --no-interaction --prefer-dist` and `npm ci && npm run build`. The dev server listens on `http://127.0.0.1:8000` (`php artisan serve --host=0.0.0.0 --port=8000`). `GET /` is the welcome page and `GET /up` is the health check.
+- Tests: `php artisan test --compact`.
