@@ -17,10 +17,10 @@ beforeEach(function () {
 it('runs the tasks that are due and reports success', function () {
     $this->travelTo('2026-01-01 03:00:00');
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class),
+        new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class),
     );
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('later', CronExpression::fromString('30 3 * * *'), RecordingTask::class),
+        new ScheduledTask('later', new CronExpression('30 3 * * *'), RecordingTask::class),
     );
 
     $this->artisan('app:scheduler:run')
@@ -35,7 +35,7 @@ it('runs the tasks that are due and reports success', function () {
 it('reports that nothing is due', function () {
     $this->travelTo('2026-01-01 03:05:00');
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class),
+        new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class),
     );
 
     $this->artisan('app:scheduler:run')
@@ -48,7 +48,7 @@ it('reports that nothing is due', function () {
 it('exits with a failure code when a task fails', function () {
     $this->travelTo('2026-01-01 03:00:00');
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('boom', CronExpression::fromString('0 3 * * *'), FailingTask::class),
+        new ScheduledTask('boom', new CronExpression('0 3 * * *'), FailingTask::class),
     );
 
     $this->artisan('app:scheduler:run')
@@ -62,7 +62,7 @@ it('exits with a failure code when a task fails', function () {
 it('runs a single named task regardless of its cron expression', function () {
     $this->travelTo('2026-01-01 03:00:00');
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('later', CronExpression::fromString('30 3 * * *'), RecordingTask::class),
+        new ScheduledTask('later', new CronExpression('30 3 * * *'), RecordingTask::class),
     );
 
     $this->artisan('app:scheduler:run', ['--task' => 'later'])
@@ -83,7 +83,7 @@ it('returns an invalid exit code for an unknown task name', function () {
 it('lists due tasks without running them in dry-run mode', function () {
     $this->travelTo('2026-01-01 03:00:00');
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class),
+        new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class),
     );
 
     $this->artisan('app:scheduler:run', ['--dry-run' => true])
@@ -98,7 +98,7 @@ it('lists due tasks without running them in dry-run mode', function () {
 it('skips a task whose lock is held by another process', function () {
     $this->travelTo('2026-01-01 03:00:00');
     app(SchedulerInterface::class)->schedule(
-        new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class),
+        new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class),
     );
     app(MutexInterface::class)->acquire('daily', 600);
 

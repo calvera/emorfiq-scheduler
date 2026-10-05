@@ -19,7 +19,6 @@ it('acquires a lock and records it in the database', function () {
     $lock = $mutex->acquire('reports.daily', 600);
 
     expect($lock)->not->toBeNull()
-        ->and($lock->isAcquired())->toBeTrue()
         ->and($lock->expiresAt()->getTimestamp())->toBe(now()->addSeconds(600)->getTimestamp())
         ->and($mutex->isLocked('reports.daily'))->toBeTrue();
     $this->assertDatabaseHas('scheduler_locks', ['key' => 'reports.daily', 'owner' => $lock->owner()]);
@@ -65,7 +64,6 @@ it('releases the lock and makes the key available again', function () {
     $released = $lock->release();
 
     expect($released)->toBeTrue()
-        ->and($lock->isAcquired())->toBeFalse()
         ->and($lock->release())->toBeFalse()
         ->and($mutex->isLocked('reports.daily'))->toBeFalse()
         ->and($mutex->acquire('reports.daily', 600))->not->toBeNull();
@@ -105,8 +103,7 @@ it('reports a lost lock when refreshing after it expired', function () {
 
     $refreshed = $lock->refresh(600);
 
-    expect($refreshed)->toBeFalse()
-        ->and($lock->isAcquired())->toBeFalse();
+    expect($refreshed)->toBeFalse();
 });
 
 it('force-releases a lock regardless of owner', function () {

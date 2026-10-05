@@ -18,7 +18,7 @@ final readonly class ScheduledTask
      * @param  positive-int  $lockTtlSeconds  After this the lock is treated as abandoned (crash protection).
      * @param  DateTimeZone|null  $timezone  Null means the scheduler's default timezone.
      *
-     * @throws SchedulerException On an empty name or invalid task class / TTL.
+     * @throws SchedulerException On an empty name or non-positive TTL.
      */
     public function __construct(
         public string $name,
@@ -31,15 +31,6 @@ final readonly class ScheduledTask
     ) {
         if (trim($name) === '') {
             throw new SchedulerException('A scheduled task must have a non-empty name.');
-        }
-
-        if (! is_a($taskClass, TaskInterface::class, true)) {
-            throw new SchedulerException(sprintf(
-                'Task class "%s" for scheduled task "%s" must implement %s.',
-                $taskClass,
-                $name,
-                TaskInterface::class,
-            ));
         }
 
         if ($lockTtlSeconds < 1) {

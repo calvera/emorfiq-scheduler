@@ -7,8 +7,6 @@ use DateTimeImmutable;
 
 final class DatabaseLock implements LockInterface
 {
-    private bool $acquired = true;
-
     /**
      * @param  non-empty-string  $key
      * @param  non-empty-string  $owner
@@ -37,15 +35,9 @@ final class DatabaseLock implements LockInterface
 
     public function refresh(int $ttlSeconds): bool
     {
-        if (! $this->acquired) {
-            return false;
-        }
-
         $expiresAt = $this->mutex->refreshOwned($this->key, $this->owner, $ttlSeconds);
 
         if ($expiresAt === null) {
-            $this->acquired = false;
-
             return false;
         }
 
@@ -56,17 +48,6 @@ final class DatabaseLock implements LockInterface
 
     public function release(): bool
     {
-        if (! $this->acquired) {
-            return false;
-        }
-
-        $this->acquired = false;
-
         return $this->mutex->releaseOwned($this->key, $this->owner);
-    }
-
-    public function isAcquired(): bool
-    {
-        return $this->acquired;
     }
 }

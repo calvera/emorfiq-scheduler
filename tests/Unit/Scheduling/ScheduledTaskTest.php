@@ -5,11 +5,6 @@ use App\Scheduling\Exceptions\SchedulerException;
 use App\Scheduling\ScheduledTask;
 use Tests\Fixtures\Scheduling\RecordingTask;
 
-it('rejects a class that does not implement TaskInterface', function () {
-    expect(fn () => new ScheduledTask('demo', CronExpression::everyMinute(), stdClass::class))
-        ->toThrow(SchedulerException::class, 'must implement');
-});
-
 it('rejects an empty name', function () {
     expect(fn () => new ScheduledTask('  ', CronExpression::everyMinute(), RecordingTask::class))
         ->toThrow(SchedulerException::class, 'non-empty name');

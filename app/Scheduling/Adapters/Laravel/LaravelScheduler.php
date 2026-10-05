@@ -15,11 +15,8 @@ use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 
 /**
- * SchedulerInterface adapter on top of Illuminate's Schedule.
- *
- * Laravel is used purely for cron expression evaluation (and to expose the tasks
- * to `schedule:list`). Overlap protection deliberately does NOT use Laravel's
- * EventMutex (its check-then-act is not atomic); TaskRunner owns the mutex instead.
+ * SchedulerInterface adapter on Illuminate Schedule (cron / due / schedule:list).
+ * Overlap protection stays in TaskRunner — Laravel EventMutex is not atomic.
  */
 final class LaravelScheduler implements SchedulerInterface
 {

@@ -2,7 +2,6 @@
 
 namespace App\Scheduling;
 
-use App\Scheduling\Contracts\LockInterface;
 use App\Scheduling\Contracts\MutexInterface;
 use App\Scheduling\Contracts\TaskInterface;
 use App\Scheduling\Exceptions\SchedulerException;
@@ -12,8 +11,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Executes a single ScheduledTask: acquires the mutex, resolves the task from the
- * container, runs it and captures the outcome. Depends on PSR interfaces only.
+ * Executes a ScheduledTask under an optional mutex. Depends on PSR interfaces only.
  */
 final class TaskRunner
 {
@@ -54,7 +52,7 @@ final class TaskRunner
 
             return new TaskRunResult($task, TaskRunStatus::Failed, $startedAt, $this->clock->now(), $exception);
         } finally {
-            $this->releaseQuietly($lock, $task);
+            $lock?->release();
         }
     }
 
@@ -75,21 +73,5 @@ final class TaskRunner
         }
 
         return $instance;
-    }
-
-    private function releaseQuietly(?LockInterface $lock, ScheduledTask $task): void
-    {
-        if ($lock === null) {
-            return;
-        }
-
-        try {
-            $lock->release();
-        } catch (Throwable $exception) {
-            $this->logger->warning('Failed to release scheduled task lock.', [
-                'task' => $task->name,
-                'exception' => $exception,
-            ]);
-        }
     }
 }

@@ -37,8 +37,8 @@ function at(string $dateTime, string $timezone = 'UTC'): DateTimeImmutable
 
 it('registers tasks and exposes them in registration order', function () {
     $scheduler = makeLaravelScheduler();
-    $daily = new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class);
-    $hourly = new ScheduledTask('hourly', CronExpression::fromString('0 * * * *'), RecordingTask::class);
+    $daily = new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class);
+    $hourly = new ScheduledTask('hourly', new CronExpression('0 * * * *'), RecordingTask::class);
 
     $scheduler->schedule($daily);
     $scheduler->schedule($hourly);
@@ -49,7 +49,7 @@ it('registers tasks and exposes them in registration order', function () {
 
 it('rejects a duplicate task name', function () {
     $scheduler = makeLaravelScheduler();
-    $scheduler->schedule(new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class));
+    $scheduler->schedule(new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class));
 
     expect(fn () => $scheduler->schedule(new ScheduledTask('daily', CronExpression::everyMinute(), RecordingTask::class)))
         ->toThrow(DuplicateTaskException::class);
@@ -64,7 +64,7 @@ it('throws when asking for an unknown task', function () {
 it('exposes registered tasks to the underlying Laravel schedule', function () {
     $scheduler = makeLaravelScheduler();
 
-    $scheduler->schedule(new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class));
+    $scheduler->schedule(new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class));
 
     $events = app(Schedule::class)->events();
     expect($events)->toHaveCount(1)
@@ -75,9 +75,9 @@ it('exposes registered tasks to the underlying Laravel schedule', function () {
 
 it('returns only the tasks whose cron matches the given minute', function () {
     $scheduler = makeLaravelScheduler();
-    $daily = new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class);
-    $hourly = new ScheduledTask('hourly', CronExpression::fromString('0 * * * *'), RecordingTask::class);
-    $quarterly = new ScheduledTask('quarterly', CronExpression::fromString('15 * * * *'), RecordingTask::class);
+    $daily = new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class);
+    $hourly = new ScheduledTask('hourly', new CronExpression('0 * * * *'), RecordingTask::class);
+    $quarterly = new ScheduledTask('quarterly', new CronExpression('15 * * * *'), RecordingTask::class);
     $scheduler->schedule($daily);
     $scheduler->schedule($hourly);
     $scheduler->schedule($quarterly);
@@ -95,7 +95,7 @@ it('evaluates the cron expression in the task timezone', function () {
     $scheduler = makeLaravelScheduler();
     $prague = new ScheduledTask(
         'prague',
-        CronExpression::fromString('0 3 * * *'),
+        new CronExpression('0 3 * * *'),
         RecordingTask::class,
         timezone: new DateTimeZone('Europe/Prague'),
     );
@@ -111,7 +111,7 @@ it('evaluates the cron expression in the task timezone', function () {
 
 it('falls back to the scheduler default timezone', function () {
     $scheduler = makeLaravelScheduler(timezone: 'Europe/Prague');
-    $task = new ScheduledTask('daily', CronExpression::fromString('0 3 * * *'), RecordingTask::class);
+    $task = new ScheduledTask('daily', new CronExpression('0 3 * * *'), RecordingTask::class);
     $scheduler->schedule($task);
 
     $due = $scheduler->dueTasks(at('2026-01-01 02:00:00'));
@@ -121,9 +121,9 @@ it('falls back to the scheduler default timezone', function () {
 
 it('runs due tasks and reports the outcome of each', function () {
     $scheduler = makeLaravelScheduler();
-    $scheduler->schedule(new ScheduledTask('ok', CronExpression::fromString('0 3 * * *'), RecordingTask::class));
-    $scheduler->schedule(new ScheduledTask('boom', CronExpression::fromString('0 3 * * *'), FailingTask::class));
-    $scheduler->schedule(new ScheduledTask('later', CronExpression::fromString('30 3 * * *'), RecordingTask::class));
+    $scheduler->schedule(new ScheduledTask('ok', new CronExpression('0 3 * * *'), RecordingTask::class));
+    $scheduler->schedule(new ScheduledTask('boom', new CronExpression('0 3 * * *'), FailingTask::class));
+    $scheduler->schedule(new ScheduledTask('later', new CronExpression('30 3 * * *'), RecordingTask::class));
 
     $report = $scheduler->run(at('2026-01-01 03:00:00'));
 
@@ -137,7 +137,7 @@ it('runs due tasks and reports the outcome of each', function () {
 
 it('runs a named task regardless of its cron expression', function () {
     $scheduler = makeLaravelScheduler();
-    $scheduler->schedule(new ScheduledTask('later', CronExpression::fromString('30 3 * * *'), RecordingTask::class));
+    $scheduler->schedule(new ScheduledTask('later', new CronExpression('30 3 * * *'), RecordingTask::class));
 
     $result = $scheduler->runTask('later', at('2026-01-01 03:00:00'));
 
@@ -149,7 +149,7 @@ it('honours the mutex when running a named task', function () {
     $mutex = new InMemoryMutex;
     $mutex->acquire('later', 60);
     $scheduler = makeLaravelScheduler($mutex);
-    $scheduler->schedule(new ScheduledTask('later', CronExpression::fromString('30 3 * * *'), RecordingTask::class));
+    $scheduler->schedule(new ScheduledTask('later', new CronExpression('30 3 * * *'), RecordingTask::class));
 
     $result = $scheduler->runTask('later', at('2026-01-01 03:00:00'));
 

@@ -4,21 +4,19 @@ namespace App\Scheduling\Mutex;
 
 use App\Scheduling\Contracts\LockInterface;
 use App\Scheduling\Contracts\MutexInterface;
-use App\Scheduling\Exceptions\MutexException;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Psr\Clock\ClockInterface;
-use Throwable;
 
 /**
  * Mutex backed by a database table with a primary key on the lock key.
  *
- * Atomicity comes from the unique constraint: the INSERT of a colliding key fails,
- * so two concurrent acquirers can never both succeed. Expired rows are removed
- * right before inserting, which lets a crashed holder's lock be taken over.
+ * Atomicity comes from the unique constraint: a colliding INSERT fails, so two
+ * concurrent acquirers can never both succeed. Expired rows are removed before
+ * inserting, which lets a crashed holder's lock be taken over.
  */
 final class DatabaseMutex implements MutexInterface
 {
@@ -50,8 +48,6 @@ final class DatabaseMutex implements MutexInterface
             ]);
         } catch (UniqueConstraintViolationException) {
             return null;
-        } catch (Throwable $exception) {
-            throw MutexException::storageFailure('acquire', $key, $exception);
         }
 
         return new DatabaseLock($this, $key, $owner, $expiresAt);
@@ -59,56 +55,36 @@ final class DatabaseMutex implements MutexInterface
 
     public function isLocked(string $key): bool
     {
-        try {
-            return $this->query()
-                ->where('key', $key)
-                ->where('expires_at', '>', $this->format($this->now()))
-                ->exists();
-        } catch (Throwable $exception) {
-            throw MutexException::storageFailure('isLocked', $key, $exception);
-        }
+        return $this->query()
+            ->where('key', $key)
+            ->where('expires_at', '>', $this->format($this->now()))
+            ->exists();
     }
 
     public function forceRelease(string $key): void
     {
-        try {
-            $this->query()->where('key', $key)->delete();
-        } catch (Throwable $exception) {
-            throw MutexException::storageFailure('forceRelease', $key, $exception);
-        }
+        $this->query()->where('key', $key)->delete();
     }
 
     public function purgeExpired(): int
     {
-        try {
-            return $this->query()
-                ->where('expires_at', '<=', $this->format($this->now()))
-                ->delete();
-        } catch (Throwable $exception) {
-            throw MutexException::storageFailure('purgeExpired', '*', $exception);
-        }
+        return $this->query()
+            ->where('expires_at', '<=', $this->format($this->now()))
+            ->delete();
     }
 
     /**
-     * Release the lock only if the given owner still holds it.
-     *
      * @internal Used by DatabaseLock.
      */
     public function releaseOwned(string $key, string $owner): bool
     {
-        try {
-            return $this->query()
-                ->where('key', $key)
-                ->where('owner', $owner)
-                ->delete() > 0;
-        } catch (Throwable $exception) {
-            throw MutexException::storageFailure('release', $key, $exception);
-        }
+        return $this->query()
+            ->where('key', $key)
+            ->where('owner', $owner)
+            ->delete() > 0;
     }
 
     /**
-     * Extend the lock only if the given owner still holds it.
-     *
      * @internal Used by DatabaseLock.
      *
      * @return DateTimeImmutable|null The new expiry, or null when the owner no longer holds the lock.
@@ -118,15 +94,11 @@ final class DatabaseMutex implements MutexInterface
         $now = $this->now();
         $expiresAt = $now->modify(sprintf('+%d seconds', $ttlSeconds));
 
-        try {
-            $updated = $this->query()
-                ->where('key', $key)
-                ->where('owner', $owner)
-                ->where('expires_at', '>', $this->format($now))
-                ->update(['expires_at' => $this->format($expiresAt)]);
-        } catch (Throwable $exception) {
-            throw MutexException::storageFailure('refresh', $key, $exception);
-        }
+        $updated = $this->query()
+            ->where('key', $key)
+            ->where('owner', $owner)
+            ->where('expires_at', '>', $this->format($now))
+            ->update(['expires_at' => $this->format($expiresAt)]);
 
         return $updated > 0 ? $expiresAt : null;
     }

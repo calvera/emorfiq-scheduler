@@ -7,8 +7,6 @@ use DateTimeImmutable;
 
 final class InMemoryLock implements LockInterface
 {
-    private bool $acquired = true;
-
     public function __construct(
         private readonly InMemoryMutex $mutex,
         private readonly string $key,
@@ -33,7 +31,7 @@ final class InMemoryLock implements LockInterface
 
     public function refresh(int $ttlSeconds): bool
     {
-        if (! $this->acquired) {
+        if (! isset($this->mutex->held[$this->key]) || $this->mutex->held[$this->key] !== $this->owner) {
             return false;
         }
 
@@ -44,17 +42,6 @@ final class InMemoryLock implements LockInterface
 
     public function release(): bool
     {
-        if (! $this->acquired) {
-            return false;
-        }
-
-        $this->acquired = false;
-
         return $this->mutex->releaseOwned($this->key, $this->owner);
-    }
-
-    public function isAcquired(): bool
-    {
-        return $this->acquired;
     }
 }
